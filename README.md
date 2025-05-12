@@ -1,64 +1,138 @@
 
 # 🛡️ Universal Exclusive Adversarial Perturbation (UEAP)
 
-This repository presents **Universal Exclusive Adversarial Perturbation (UEAP)** — a novel adversarial attack approach designed to affect only a specific subset of images within the same class, leaving others unharmed. Developed by **Idan Yankelev, Yarin Yerushalmi Levi, Amit Baras, and Yonatan Amaru** as part of a research project in 2024.
+This repository showcases our novel adversarial attack method — **Universal Exclusive Adversarial Perturbation (UEAP)** — developed as a research project by **Idan Yankelev, Yarin Yerushalmi Levi, Amit Baras, and Yonatan Amaru** in March 2024. The method targets specific subsets of images within the same class in a deep learning image classifier without affecting the rest, offering a more stealthy and focused adversarial strategy.
 
 ---
 
-## 📌 Project Overview
+## 📌 Overview
 
-In contrast to traditional Universal Adversarial Perturbations (UAPs) which affect all images, **UEAPs** are crafted to:
-- **Degrade classifier performance on a victim subset** (e.g., black dogs),
-- **Maintain correct classification on a keep subset** (e.g., non-black dogs),
-- All within the same semantic class.
+Traditional adversarial perturbations affect all samples, making them easier to detect and mitigate. UEAP innovates by designing **class-specific** attacks that only degrade classifier performance on a chosen **subset** (e.g., black cats), leaving others (e.g., non-black cats) in the same class unaffected.
 
-## 🧠 Methodology
+This offers:
+- Higher stealth and specificity in attacks
+- Improved understanding of model weaknesses
+- Foundations for robust defenses and ethical red teaming
 
-Given a class `c` and its image set `S`, we split it into:
-- `sj` (victim images) ⟶ to be misclassified
-- `S \ sj` (keep images) ⟶ to retain original classification
+---
 
-### Objective:
-- For `xi ∈ sj`: `f(xi + δ) = y_target ≠ c`
-- For `xj ∈ S \ sj`: `f(xj + δ) = c`
+## 🔍 Research Goals
 
-### Exclusive Loss Function:
+- Design perturbations that:
+  - Misclassify only specific visual variants within a class (victims)
+  - Preserve performance on the remaining samples in the same class (keep)
+- Maintain universal applicability (same perturbation across multiple images)
+- Evaluate both targeted and untargeted attack settings
+
+---
+
+## 🧪 Methodology
+
+### Formal Setup
+Let:
+- `S` be the set of all images in class `c`
+- `sj ⊂ S` be the victim subset (e.g., black dogs)
+- `S \ sj` be the keep subset (e.g., non-black dogs)
+
+### Optimization Objective
+- For `x ∈ sj`: `f(x + δ) ≠ c` or `= y_target` (victim misclassification)
+- For `x ∈ S \ sj`: `f(x + δ) = c` (keep correctness)
+
+### Loss Function
 ```
-loss_exclusive = α * Σ f(x_keep + δ, y_gt) ± β * Σ f(x_victim + δ, y_target)
+loss_exclusive = α * Σ Loss(keep outputs, keep labels)
+               ± β * Σ Loss(victim outputs, victim labels)
 ```
-Where:
-- `α`, `β` control trade-off
-- `±` depends on whether attack is targeted or untargeted
+- `α`, `β`: control balance between precision and damage
+- `±`: plus for targeted attack, minus for untargeted
 
-## ⚙️ Implementation Details
+### Algorithms
+- Built upon PGD (Projected Gradient Descent)
+- Compared to baseline Universal Adversarial Perturbation (UAP)
 
-- **Model**: ResNet50 fine-tuned on 4 classes: dogs, cats, birds, fish.
-- **Dataset**: Custom subset of ImageNet + Kaggle datasets with ~1150 images/class.
-- **Attack Type**: Targeted & Untargeted UEAP and UAP
-- **Optimization**: Based on PGD (Projected Gradient Descent)
-  - Step size: 9/255
-  - Epsilon budget: 16/255 to 50/255
-  - Iterations: 50
+---
 
-## 📊 Results Summary
+## 🖼️ Dataset & Model
 
-| Class | Targeted UAP | Targeted UEAP | Untargeted UAP | Untargeted UEAP |
-|-------|--------------|----------------|----------------|------------------|
-| Dogs  | 68.75%       | ✅ Less harmful | 81.25%         | ✅ More selective |
-| Cats  | 81.25%       | ✅ Better       | 78.12%         | ✅ Preserved keep |
-| Fish  | 53.12%       | ✅ Sharper      | 21.88%         | ✅ Controlled     |
-| Birds | 31.25%       | ✅ Effective    | 34.38%         | ✅ Focused        |
+- **Base Model**: ResNet50 fine-tuned on 4 animal classes: `dog`, `cat`, `bird`, `fish`
+- **Source**: Curated datasets from Kaggle:
+  - [Cats vs Dogs](https://www.kaggle.com/datasets/shaunthesheep/microsoft-catsvsdogs-dataset)
+  - [Colored Dogs & Cats](https://www.kaggle.com/datasets/ahmedmostafa11111/cd-deep)
+  - [Fish Dataset](https://www.kaggle.com/datasets/markdaniellampa/fish-dataset)
+  - [Bird Species](https://www.kaggle.com/datasets/gpiosenka/100-bird-species)
 
-UEAP outperformed UAP in keeping non-target images unaffected while still degrading performance on the victim subset.
+- **Image Count**: ~1150 per class
+- **Data Split**:
+  - Training
+  - Validation
+  - Test (manually partitioned into "keep" and "victim")
 
-## 📈 Key Findings
+---
 
-- **Selective Vulnerability**: UEAP attacks are harder to detect due to their focused impact.
-- **Trade-off Observed**: Stronger victim attack often compromises keep set accuracy.
-- **Overfitting Issue**: Overfitting to a small dataset suggests need for more training data.
+## 📊 Experiment Details
+
+- **Attack Budget (ε)**: 16/255 to 50/255
+- **Step Size**: 9/255
+- **Iterations**: 50
+- **UEAP vs UAP Comparison**
+  - Performed both targeted and untargeted attacks
+  - Evaluated on test subsets
+
+### Metrics
+- Accuracy degradation on **victim** images (higher = more successful attack)
+- Accuracy preservation on **keep** images (higher = more stealth)
+
+### Results Summary
+
+| Class | Keep Accuracy (Original/UAP/UEAP) | Victim Accuracy (Original/UAP/UEAP) |
+|-------|------------------------------------|--------------------------------------|
+| Dogs  | 100% / 68.75% / ✅81.25%           | 96.88% / 37.50% / ✅75.00%            |
+| Cats  | 100% / 78.12% / ✅84.38%           | 96.80% / 43.75% / ✅46.88%            |
+| Fish  | 100% / 21.88% / ✅90.62%           | 100.0% / 21.88% / ✅90.62%            |
+| Birds | 96.88% / 34.38% / ✅40.62%         | 100.0% / 34.38% / ✅56.25%            |
+
+🟢 UEAP showed strong ability to selectively degrade victim predictions while maintaining performance on keep images.
+
+---
+
+## 🔎 Insights
+
+- **Stealth attacks** are possible and practical.
+- **Targeted attacks** with UEAP can outperform untargeted ones under some settings.
+- **Trade-off exists** between effectiveness on victim images and preserving keep accuracy.
+- Larger datasets could reduce overfitting and improve generalization.
+
+---
+
+## 🔧 Project Structure
+
+```
+.
+├── data/                # Image datasets
+├── models/              # Fine-tuned ResNet50 weights
+├── attacks/             # UAP and UEAP implementations
+│   ├── pgd_attack.py
+│   ├── uap.py
+│   └── ueap.py
+├── experiments/         # Training and attack scripts
+├── results/             # Quantitative results, figures
+└── README.md            # Project summary
+```
+
+---
 
 ## 🔮 Future Work
 
-- Expand dataset to reduce overfitting and increase robustness.
-- Explore applications on object detection and real-world vision systems.
-- Enhance optimization for better victim-targeting with minimal collateral.
+- Train on a larger, more diverse dataset
+- Explore real-world use cases: face recognition, object detection
+- Investigate black-box settings for transferability of UEAP
+- Develop defenses against exclusive perturbations
+
+---
+
+## 📜 License
+
+This research is shared for academic and educational use only. Please cite the authors if you use this work.
+
+---
+
