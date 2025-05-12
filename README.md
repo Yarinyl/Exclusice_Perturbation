@@ -102,24 +102,6 @@ loss_exclusive = α * Σ Loss(keep outputs, keep labels)
 - **Trade-off exists** between effectiveness on victim images and preserving keep accuracy.
 - Larger datasets could reduce overfitting and improve generalization.
 
----
-
-## 🔧 Project Structure
-
-```
-.
-├── data/                # Image datasets
-├── models/              # Fine-tuned ResNet50 weights
-├── attacks/             # UAP and UEAP implementations
-│   ├── pgd_attack.py
-│   ├── uap.py
-│   └── ueap.py
-├── experiments/         # Training and attack scripts
-├── results/             # Quantitative results, figures
-└── README.md            # Project summary
-```
-
----
 
 ## 🔮 Future Work
 
@@ -129,10 +111,3 @@ loss_exclusive = α * Σ Loss(keep outputs, keep labels)
 - Develop defenses against exclusive perturbations
 
 ---
-
-## 📜 License
-
-This research is shared for academic and educational use only. Please cite the authors if you use this work.
-
----
-
